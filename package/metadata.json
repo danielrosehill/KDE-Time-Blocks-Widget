@@ -12,7 +12,7 @@
         "Id": "com.danielrosehill.localutctime",
         "License": "MIT",
         "Name": "KDE Time Blocks",
-        "Version": "1.4.1",
+        "Version": "1.5.0",
         "Website": "https://github.com/danielrosehill/KDE-Time-Blocks-Widget"
     },
     "KPackageStructure": "Plasma/Applet",

@@ -92,8 +92,8 @@
             <default>false</default>
         </entry>
         <entry name="hebrewRolloverMode" type="String">
-            <!-- midnight or sunset -->
-            <default>midnight</default>
+            <!-- Sunset is the only supported mode; civil midnight is used as a silent fallback when no location is set. -->
+            <default>sunset</default>
         </entry>
         <entry name="cardOrder" type="String">
             <!-- Desktop blocks (cards). Comma-separated list of block kinds, in display order. -->
@@ -127,6 +127,10 @@
         </entry>
         <entry name="utcTimeCustomColor" type="String">
             <default>#D9D9D9</default>
+        </entry>
+        <entry name="extraTimezones" type="String">
+            <!-- JSON array: [{"id":"tz_xxx","tzid":"America/New_York","label":"NYC"}, ...] -->
+            <default>[]</default>
         </entry>
     </group>
 </kcfg>

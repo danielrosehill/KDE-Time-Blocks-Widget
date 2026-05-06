@@ -9,6 +9,17 @@ ColumnLayout {
 
     property string cfg_panelCardOrder
     property string cfg_cardOrder
+    property string cfg_extraTimezones
+
+    function _parseExtraTz() {
+        try { const a = JSON.parse(cfg_extraTimezones || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+    }
+    readonly property var extraTzBlocks: {
+        const out = [];
+        const list = _parseExtraTz();
+        for (const e of list) out.push({ kind: "tz:" + e.id, label: i18n("Time zone: %1 (%2)", e.label, e.tzid) });
+        return out;
+    }
 
     readonly property var standardBlocks: [
         { kind: "local-time",            label: i18n("Local time (HH:MM)") },
@@ -29,7 +40,7 @@ ColumnLayout {
         { kind: "hebrew-month",          label: i18n("Hebrew month (Iyyar)") },
         { kind: "hebrew-year",           label: i18n("Hebrew year (5786)") }
     ]
-    readonly property var allBlocks: standardBlocks.concat(hebrewBlocks)
+    readonly property var allBlocks: standardBlocks.concat(extraTzBlocks).concat(hebrewBlocks)
 
     Label {
         text: i18n("Choose which blocks appear in each layout, and drag to reorder. The same widget renders the Tray list when docked in a panel and the Desktop list when free-floating on the desktop.")

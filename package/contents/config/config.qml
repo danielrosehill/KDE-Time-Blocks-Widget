@@ -13,6 +13,11 @@ ConfigModel {
         source: "configDate.qml"
     }
     ConfigCategory {
+        name: i18n("Time Zones")
+        icon: "globe"
+        source: "configTimezones.qml"
+    }
+    ConfigCategory {
         name: i18n("Blocks")
         icon: "view-grid"
         source: "configBlocks.qml"

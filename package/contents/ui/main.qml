@@ -31,6 +31,32 @@ PlasmoidItem {
     function dayOfMonth(d, utc) {
         return (utc ? d.getUTCDate() : d.getDate()).toString();
     }
+    function parseExtraTimezones() {
+        try {
+            const a = JSON.parse(Plasmoid.configuration.extraTimezones || "[]");
+            return Array.isArray(a) ? a : [];
+        } catch (e) { return []; }
+    }
+    function findExtraTz(idOrKind) {
+        const id = idOrKind.indexOf("tz:") === 0 ? idOrKind.substring(3) : idOrKind;
+        const list = parseExtraTimezones();
+        for (const e of list) if (e.id === id) return e;
+        return null;
+    }
+    function fmtTimeInTz(d, tzid) {
+        try {
+            const opts = {
+                timeZone: tzid,
+                hour12: !Plasmoid.configuration.use24Hour,
+                hour: "2-digit",
+                minute: "2-digit"
+            };
+            if (Plasmoid.configuration.showSeconds) opts.second = "2-digit";
+            return new Intl.DateTimeFormat("en-GB", opts).format(d);
+        } catch (e) {
+            return "?";
+        }
+    }
     function parseCardOrder() {
         return (Plasmoid.configuration.cardOrder || "").split(",")
             .map(s => s.trim()).filter(s => s.length);
@@ -337,7 +363,8 @@ PlasmoidItem {
 
                                 readonly property string kind: modelData
                             readonly property bool isCombinedDate: kind === "date-combined"
-                            readonly property bool isTimeBlock: kind === "local-time" || kind === "utc-time"
+                            readonly property bool isExtraTz: kind.indexOf("tz:") === 0
+                            readonly property bool isTimeBlock: kind === "local-time" || kind === "utc-time" || isExtraTz
                             readonly property bool isWeekdayDay: kind === "weekday-day"
                             readonly property bool isHebrewMulti:
                                    kind === "hebrew-day-month"
@@ -352,6 +379,10 @@ PlasmoidItem {
                             function primaryFor(k) {
                                 const d = root.activeDate();
                                 const utc = root.activeUtc();
+                                if (k.indexOf("tz:") === 0) {
+                                    const e = root.findExtraTz(k);
+                                    return e ? fmtTimeInTz(nowLocal, e.tzid) : "?";
+                                }
                                 switch (k) {
                                     case "local-time": return fmtTime(nowLocal, false);
                                     case "utc-time": return fmtTime(nowUtc, true);
@@ -382,6 +413,10 @@ PlasmoidItem {
                                 if (k === "local-time")
                                     return Plasmoid.configuration.autoLocalLabel ? localTzAbbrev() : Plasmoid.configuration.localLabel;
                                 if (k === "utc-time") return Plasmoid.configuration.utcLabel;
+                                if (k.indexOf("tz:") === 0) {
+                                    const e = root.findExtraTz(k);
+                                    return e ? e.label : "";
+                                }
                                 return "";
                             }
 
@@ -550,9 +585,11 @@ PlasmoidItem {
             readonly property int cardCount: Math.max(1, cards.length)
 
             readonly property int outerPad: Plasmoid.configuration.desktopShowContainer
-                ? Math.max(10, Math.floor(Math.min(deskItem.width, deskItem.height) * 0.06))
+                ? Math.max(5, Math.floor(Math.min(deskItem.width, deskItem.height) * 0.025))
                 : 0
-            readonly property int gap: Math.max(8, Plasmoid.configuration.spacing > 0 ? Plasmoid.configuration.spacing : Math.floor(Math.min(deskItem.width, deskItem.height) * 0.04))
+            readonly property int gap: Plasmoid.configuration.spacing > 0
+                ? Plasmoid.configuration.spacing
+                : Math.max(10, Math.floor(Math.min(deskItem.width, deskItem.height) * 0.05))
 
             readonly property real cardW: vertical
                 ? deskItem.width - outerPad * 2
@@ -612,12 +649,17 @@ PlasmoidItem {
                             || kind === "hebrew-day-month-year"
                             || kind === "hebrew-month-day"
                             || kind === "hebrew-month-day-year"
-                        readonly property bool isTimeBlock: kind === "local-time" || kind === "utc-time"
+                        readonly property bool isExtraTz: kind.indexOf("tz:") === 0
+                        readonly property bool isTimeBlock: kind === "local-time" || kind === "utc-time" || isExtraTz
 
                         // For non-combined blocks: a single primary value
                         readonly property string primary: {
                             const d = root.activeDate();
                             const utc = root.activeUtc();
+                            if (kind.indexOf("tz:") === 0) {
+                                const e = root.findExtraTz(kind);
+                                return e ? fmtTimeInTz(nowLocal, e.tzid) : "?";
+                            }
                             switch (kind) {
                                 case "local-time": return fmtTime(nowLocal, false);
                                 case "utc-time": return fmtTime(nowUtc, true);
@@ -645,6 +687,10 @@ PlasmoidItem {
                             }
                         }
                         readonly property string secondary: {
+                            if (kind.indexOf("tz:") === 0) {
+                                const e = root.findExtraTz(kind);
+                                return e ? e.label : "";
+                            }
                             switch (kind) {
                                 case "local-time":
                                     const lbl = Plasmoid.configuration.autoLocalLabel ? localTzAbbrev() : Plasmoid.configuration.localLabel;
@@ -698,7 +744,7 @@ PlasmoidItem {
                                 Layout.fillWidth: true
                                 horizontalAlignment: Text.AlignHCenter
                                 text: card.primary
-                                color: timeColorFor(card.kind, deskItem.pal.text)
+                                color: deskItem.pal.text
                                 font.family: root.fontFamily
                                 font.pixelSize: deskItem.fsTime
                                 font.bold: true

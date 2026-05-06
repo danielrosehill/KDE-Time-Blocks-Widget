@@ -18,8 +18,10 @@ ColumnLayout {
     property string cfg_hebrewRolloverMode
 
     readonly property bool active: hebrewEnabled.checked
-    readonly property bool sunsetMode: rolloverCombo.currentValue === "sunset"
     readonly property bool locationMissing: !cfg_hebrewLocationSet || (cfg_hebrewLatitude === 0.0 && cfg_hebrewLongitude === 0.0)
+
+    // Sunset is the only supported rollover mode; force it on whenever this page is shown.
+    Component.onCompleted: cfg_hebrewRolloverMode = "sunset"
 
     Kirigami.FormLayout {
         Layout.fillWidth: true
@@ -120,33 +122,18 @@ ColumnLayout {
             }
         }
 
-        Item { Kirigami.FormData.isSection: true; Kirigami.FormData.label: i18n("Day rollover") }
-
-        ComboBox {
-            id: rolloverCombo
-            enabled: page.active
-            Kirigami.FormData.label: i18n("Day flips at:")
-            model: [
-                { text: i18n("Civil midnight"), value: "midnight" },
-                { text: i18n("Sunset (shkiah)"),  value: "sunset" }
-            ]
-            textRole: "text"
-            valueRole: "value"
-            currentIndex: page.cfg_hebrewRolloverMode === "sunset" ? 1 : 0
-            onActivated: page.cfg_hebrewRolloverMode = model[currentIndex].value
-        }
     }
 
     Kirigami.InlineMessage {
         Layout.fillWidth: true
         type: Kirigami.MessageType.Warning
-        visible: page.active && page.sunsetMode && page.locationMissing
-        text: i18n("Sunset rollover needs latitude, longitude, and a timezone. Without them, the Hebrew date will fall back to civil midnight.")
+        visible: page.active && page.locationMissing
+        text: i18n("Set your location above so the Hebrew date can flip at sunset. Until a location is set, the date will fall back to civil midnight.")
     }
     Kirigami.InlineMessage {
         Layout.fillWidth: true
         type: Kirigami.MessageType.Information
-        visible: page.active && page.sunsetMode && !page.locationMissing
-        text: i18n("Sunset times are fetched once per day from hebcal.com using the coordinates above.")
+        visible: page.active && !page.locationMissing
+        text: i18n("Hebrew date flips at sunset. Sunset times are fetched once per day from hebcal.com using the coordinates above.")
     }
 }
